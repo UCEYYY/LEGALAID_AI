@@ -3,9 +3,6 @@ name: Build Frontend
 on:
   push:
     branches: [main]
-    paths:
-      - 'legalaid-frontend/**'
-      - '.github/workflows/build-frontend.yml'
 
 jobs:
   build:
@@ -14,13 +11,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: legalaid-frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: legalaid-frontend
@@ -32,7 +29,6 @@ jobs:
 
       - name: Copy dist to backend
         run: |
-          rm -rf backend/public/dist
           mkdir -p backend/public/dist
           cp -r legalaid-frontend/dist/. backend/public/dist/
 
@@ -40,6 +36,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config advice.addIgnoredFile false
           git add -f backend/public/dist
-          git diff --cached --quiet || git commit -m "chore: build frontend [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: build frontend [skip ci]"
+            git push
+          fi
