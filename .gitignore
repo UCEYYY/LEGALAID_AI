@@ -9,6 +9,9 @@ backend/.env
 # Build output frontend (di-generate oleh GitHub Actions, jangan hapus manual)
 legalaid-frontend/dist/
 
+# Khusus backend/public/dist BOLEH di-commit (di-generate oleh GitHub Actions)
+!backend/public/dist
+
 # Logs
 *.log
 npm-debug.log*
