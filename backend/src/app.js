@@ -27,11 +27,14 @@ app.use('/health', healthRoutes) // backward compat
 
 // Serve frontend static files jika sudah di-build
 const frontendDist = join(__dirname, '../../legalaid-frontend/dist')
-if (existsSync(frontendDist)) {
-  app.use(express.static(frontendDist))
+const frontendDistProd = join(__dirname, '../public/dist')
+const distPath = existsSync(frontendDistProd) ? frontendDistProd : (existsSync(frontendDist) ? frontendDist : null)
+
+if (distPath) {
+  app.use(express.static(distPath))
   // Semua route non-API diarahkan ke index.html (Vue Router SPA)
   app.get('*', (_req, res) => {
-    res.sendFile(join(frontendDist, 'index.html'))
+    res.sendFile(join(distPath, 'index.html'))
   })
 }
 
@@ -39,8 +42,8 @@ app.use(errorHandler)
 
 app.listen(env.port, () => {
   console.log(`LegalAid API server running on port ${env.port}`)
-  if (existsSync(frontendDist)) {
-    console.log(`Serving frontend from ${frontendDist}`)
+  if (distPath) {
+    console.log(`Serving frontend from ${distPath}`)
   }
 })
 

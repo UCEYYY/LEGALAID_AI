@@ -6,7 +6,7 @@ node_modules/
 .env
 backend/.env
 
-# Build output
+# Build output frontend (di-generate oleh GitHub Actions, jangan hapus manual)
 legalaid-frontend/dist/
 
 # Logs

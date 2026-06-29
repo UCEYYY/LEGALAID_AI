@@ -8,7 +8,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
-    "build": "cd ../legalaid-frontend && npm install && npm run build"
+    "build": "echo 'Backend ready'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
