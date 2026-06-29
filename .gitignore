@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment files — JANGAN pernah di-commit!
+.env
+backend/.env
+
+# Build output
+legalaid-frontend/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
