@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   message: {
@@ -43,6 +43,77 @@ function formatTime(isoString) {
     minute: '2-digit',
   })
 }
+
+// Simple markdown renderer — aman dari XSS, tidak perlu library eksternal
+function renderMarkdown(text) {
+  if (!text) return ''
+
+  // Escape HTML dulu
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+
+  // Bold: **teks** atau __teks__
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+  // Italic: *teks* atau _teks_
+  html = html.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>')
+  html = html.replace(/_([^_\n]+?)_/g, '<em>$1</em>')
+
+  // Proses baris per baris
+  const lines = html.split('\n')
+  const result = []
+  let inList = false
+  let inOrderedList = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+
+    // Heading: ## Teks
+    if (/^###\s+(.+)/.test(line)) {
+      if (inList) { result.push('</ul>'); inList = false }
+      if (inOrderedList) { result.push('</ol>'); inOrderedList = false }
+      result.push(`<h3 class="font-semibold text-navy-900 mt-3 mb-1">${line.replace(/^###\s+/, '')}</h3>`)
+    } else if (/^##\s+(.+)/.test(line)) {
+      if (inList) { result.push('</ul>'); inList = false }
+      if (inOrderedList) { result.push('</ol>'); inOrderedList = false }
+      result.push(`<h2 class="font-bold text-navy-900 mt-4 mb-1.5">${line.replace(/^##\s+/, '')}</h2>`)
+    }
+    // Unordered list: * item atau - item
+    else if (/^[\*\-]\s+(.+)/.test(line)) {
+      if (inOrderedList) { result.push('</ol>'); inOrderedList = false }
+      if (!inList) { result.push('<ul class="list-disc pl-5 space-y-1 my-1">'); inList = true }
+      result.push(`<li>${line.replace(/^[\*\-]\s+/, '')}</li>`)
+    }
+    // Ordered list: 1. item
+    else if (/^\d+\.\s+(.+)/.test(line)) {
+      if (inList) { result.push('</ul>'); inList = false }
+      if (!inOrderedList) { result.push('<ol class="list-decimal pl-5 space-y-1 my-1">'); inOrderedList = true }
+      result.push(`<li>${line.replace(/^\d+\.\s+/, '')}</li>`)
+    }
+    // Empty line
+    else if (line.trim() === '') {
+      if (inList) { result.push('</ul>'); inList = false }
+      if (inOrderedList) { result.push('</ol>'); inOrderedList = false }
+      result.push('<br>')
+    }
+    // Normal paragraph
+    else {
+      if (inList) { result.push('</ul>'); inList = false }
+      if (inOrderedList) { result.push('</ol>'); inOrderedList = false }
+      result.push(`<p class="mb-1">${line}</p>`)
+    }
+  }
+
+  if (inList) result.push('</ul>')
+  if (inOrderedList) result.push('</ol>')
+
+  return result.join('')
+}
+
+const renderedContent = computed(() => renderMarkdown(props.message.content))
 </script>
 
 <template>
@@ -80,6 +151,7 @@ function formatTime(isoString) {
           </div>
           <span class="text-xs text-navy-400 ml-2">LegalAid AI sedang menganalisis regulasi...</span>
         </div>
+        <div v-else-if="message.role === 'assistant'" class="text-sm prose-sm leading-relaxed" v-html="renderedContent" />
         <div v-else class="text-sm whitespace-pre-wrap">
           {{ message.content }}
         </div>

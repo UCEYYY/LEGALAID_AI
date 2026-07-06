@@ -16,9 +16,11 @@ const messagesEnd = ref(null)
 const chatContainer = ref(null)
 const disclaimerVisible = ref(true)
 const sidebarOpen = ref(false)
+const showHistory = ref(false)
 
 const hasMessages = computed(() => chatStore.hasMessages)
 const currentCategory = computed(() => chatStore.category)
+const recentSessions = computed(() => historyStore.sortedSessions.slice(0, 10))
 
 const categoryMeta = {
   ketenagakerjaan: {
@@ -74,14 +76,31 @@ onMounted(() => {
     return
   }
   scrollToBottom()
+  window.addEventListener('beforeunload', handleBeforeUnload)
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  // Only save to history — do NOT fullReset here because this also fires on refresh.
+  // fullReset is called explicitly in handleChangeCategory and handleReset.
   if (chatStore.messages.length > 1) {
     historyStore.saveSession(chatStore.category, chatStore.messages)
   }
-  chatStore.fullReset()
 })
+
+function handleBeforeUnload() {
+  // Persist current state to sessionStorage so refresh restores the session
+  if (chatStore.category && chatStore.messages.length > 0) {
+    try {
+      sessionStorage.setItem('legalaid_chat_session', JSON.stringify({
+        category: chatStore.category,
+        messages: chatStore.messages,
+      }))
+    } catch {
+      // ignore
+    }
+  }
+}
 
 watch(() => chatStore.messages.length, () => {
   nextTick(scrollToBottom)
@@ -155,6 +174,32 @@ const quickQuestions = [
   'Hak konsumen atas barang rusak?',
   'Prosedur membuat laporan polisi?',
 ]
+
+function loadSession(sessionId) {
+  const session = historyStore.getSession(sessionId)
+  if (!session) return
+  if (chatStore.messages.length > 1) {
+    historyStore.saveSession(chatStore.category, chatStore.messages)
+  }
+  chatStore.fullReset()
+  chatStore.setCategory(session.category)
+  chatStore.messages = session.messages.map(m => ({ ...m }))
+  showHistory.value = false
+  sidebarOpen.value = false
+  nextTick(scrollToBottom)
+}
+
+function getCategoryColor(cat) {
+  const colors = {
+    ketenagakerjaan: 'bg-blue-100 text-blue-700',
+    konsumen: 'bg-emerald-100 text-emerald-700',
+    keluarga: 'bg-pink-100 text-pink-700',
+    pertanahan: 'bg-amber-100 text-amber-700',
+    pidana: 'bg-red-100 text-red-700',
+    utang_kredit: 'bg-purple-100 text-purple-700',
+  }
+  return colors[cat] || 'bg-gray-100 text-gray-700'
+}
 </script>
 
 <template>
@@ -177,7 +222,29 @@ const quickQuestions = [
         </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto p-5 space-y-5">
+      <!-- Tab switcher -->
+      <div class="flex border-b border-gray-100 px-3 pt-3 gap-1">
+        <button
+          @click="showHistory = false"
+          class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-t-xl text-xs font-medium transition-all duration-200"
+          :class="!showHistory ? 'bg-royal-50 text-royal-700 border-b-2 border-royal-500' : 'text-navy-400 hover:text-navy-600'"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Info
+        </button>
+        <button
+          @click="showHistory = true"
+          class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-t-xl text-xs font-medium transition-all duration-200"
+          :class="showHistory ? 'bg-royal-50 text-royal-700 border-b-2 border-royal-500' : 'text-navy-400 hover:text-navy-600'"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Riwayat
+          <span v-if="recentSessions.length > 0" class="bg-royal-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">{{ recentSessions.length }}</span>
+        </button>
+      </div>
+
+      <!-- Tab: Info -->
+      <div v-if="!showHistory" class="flex-1 overflow-y-auto p-5 space-y-5">
         <div v-if="currentCategory" class="space-y-3">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-royal-500 to-royal-700 flex items-center justify-center shadow-md shadow-royal-500/20 shrink-0">
@@ -248,6 +315,52 @@ const quickQuestions = [
               <p class="text-xs text-gold-800 leading-relaxed">Jawaban AI bersifat informatif dan <strong>bukan nasihat hukum</strong> yang mengikat. Untuk kasus kompleks, konsultasikan dengan pengacara profesional.</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab: Riwayat -->
+      <div v-else class="flex-1 overflow-y-auto p-4 space-y-2">
+        <!-- Empty state -->
+        <div v-if="recentSessions.length === 0" class="text-center py-10">
+          <div class="w-12 h-12 rounded-2xl bg-navy-50 flex items-center justify-center mx-auto mb-3">
+            <svg class="w-6 h-6 text-navy-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <p class="text-xs text-navy-400 leading-relaxed">Belum ada riwayat konsultasi</p>
+        </div>
+
+        <!-- Session list -->
+        <div v-else>
+          <p class="text-xs text-navy-400 mb-3">Klik untuk melanjutkan sesi sebelumnya</p>
+          <div
+            v-for="session in recentSessions"
+            :key="session.id"
+            @click="loadSession(session.id)"
+            class="group w-full text-left bg-white hover:bg-royal-50 hover:border-royal-200 border border-gray-100 rounded-2xl p-3.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+          >
+            <div class="flex items-start gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-royal-500 to-royal-700 flex items-center justify-center shrink-0 mt-0.5">
+                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-medium mb-1" :class="getCategoryColor(session.category)">
+                  {{ categoryMeta[session.category]?.label || session.category }}
+                </span>
+                <p class="text-xs text-navy-600 leading-relaxed line-clamp-2 group-hover:text-royal-700 transition-colors">
+                  {{ session.messages.find(m => m.role === 'user')?.content || 'Konsultasi hukum' }}
+                </p>
+                <p class="text-[10px] text-navy-400 mt-1">{{ session.messages.length }} pesan</p>
+              </div>
+            </div>
+          </div>
+
+          <button
+            @click="router.push('/history')"
+            class="w-full mt-2 text-xs text-royal-600 hover:text-royal-800 font-medium py-2 rounded-xl hover:bg-royal-50 transition-colors"
+          >
+            Lihat semua riwayat →
+          </button>
         </div>
       </div>
 

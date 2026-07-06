@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chatStore'
-import { CATEGORIES } from '../utils/helpers'
+import { CATEGORIES, detectCategory } from '../utils/helpers'
 import DisclaimerBanner from '../components/DisclaimerBanner.vue'
 
 const router = useRouter()
@@ -26,11 +26,22 @@ function selectCategory(category) {
 
 function startConsultation() {
   if (searchQuery.value.trim()) {
+    const text = searchQuery.value.trim()
+    const category = detectCategory(text)
     chatStore.fullReset()
-    chatStore.addMessage({ role: 'user', content: searchQuery.value.trim() })
+    chatStore.setCategory(category)
+    chatStore.addMessage({
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+      timestamp: new Date().toISOString(),
+      category,
+    })
     router.push('/chat')
   } else {
-    router.push('/chat')
+    // Scroll ke section kategori agar user memilih kategori dulu
+    const el = document.getElementById('kategori')
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
   }
 }
 </script>

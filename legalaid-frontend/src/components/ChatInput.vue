@@ -61,17 +61,8 @@ function adjustHeight(e) {
           style="min-height: 56px; max-height: 150px;"
         />
 
-        <!-- Bottom row: attachment left, send right -->
-        <div class="absolute bottom-2 left-2 right-2 flex items-center justify-between">
-          <button
-            class="w-7 h-7 rounded-xl flex items-center justify-center text-navy-400 hover:text-navy-600 hover:bg-navy-50 transition-all"
-            title="Lampirkan dokumen"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
-            </svg>
-          </button>
-
+        <!-- Bottom row: send button right -->
+        <div class="absolute bottom-2 left-2 right-2 flex items-center justify-end">
           <button
             @click="handleSubmit"
             :disabled="disabled || !hasText || isOverLimit"

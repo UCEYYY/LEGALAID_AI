@@ -13,6 +13,63 @@ export function formatDate(isoString) {
   })
 }
 
+// Deteksi kategori otomatis berdasarkan kata kunci dalam teks pertanyaan
+export function detectCategory(text) {
+  const lower = text.toLowerCase()
+
+  const keywords = {
+    ketenagakerjaan: [
+      'phk', 'pesangon', 'kerja', 'karyawan', 'pegawai', 'gaji', 'upah', 'kontrak kerja',
+      'pkwt', 'pkwtt', 'bpjs ketenagakerjaan', 'buruh', 'pekerja', 'lembur', 'cuti',
+      'resign', 'dipecat', 'pemutusan hubungan', 'thr', 'tenaga kerja', 'slip gaji',
+      'majikan', 'perusahaan memecat', 'mogok kerja', 'serikat pekerja',
+    ],
+    konsumen: [
+      'konsumen', 'penipuan online', 'barang cacat', 'produk rusak', 'belanja online',
+      'marketplace', 'toko online', 'refund', 'pengembalian', 'garansi', 'bpsk',
+      'perlindungan konsumen', 'jual beli', 'tipu', 'tidak dikirim', 'tidak sesuai',
+      'komplain', 'merchant', 'seller', 'e-commerce',
+    ],
+    keluarga: [
+      'cerai', 'perceraian', 'nikah', 'pernikahan', 'kawin', 'hak asuh', 'anak',
+      'kdrt', 'kekerasan rumah tangga', 'warisan', 'waris', 'nafkah', 'talak',
+      'gugat cerai', 'poligami', 'perwalian', 'adopsi', 'hibah', 'wasiat',
+      'perkawinan', 'suami', 'istri', 'pasangan',
+    ],
+    pertanahan: [
+      'tanah', 'sertifikat', 'shm', 'shgb', 'hgb', 'hak guna', 'sengketa tanah',
+      'batas tanah', 'jual beli tanah', 'kavling', 'lahan', 'properti', 'bpn',
+      'agraria', 'girik', 'letter c', 'sporadik', 'ukur tanah', 'rumah',
+      'perumahan', 'kpr', 'akta jual beli',
+    ],
+    pidana: [
+      'polisi', 'laporan', 'ditangkap', 'tersangka', 'terdakwa', 'penjara',
+      'kuhp', 'pidana', 'kejahatan', 'tindak pidana', 'penganiayaan', 'pencurian',
+      'penipuan', 'korupsi', 'narkoba', 'pemerkosaan', 'penggelapan', 'fitnah',
+      'pencemaran nama', 'ite', 'ujaran kebencian', 'lapor polisi', 'jaksa',
+      'hakim', 'sidang', 'vonis', 'ditahan', 'penangkapan',
+    ],
+    utang_kredit: [
+      'utang', 'kredit', 'pinjaman', 'cicilan', 'angsuran', 'penagih', 'debt collector',
+      'pailit', 'kepailitan', 'kpr macet', 'kredit macet', 'bunga', 'leasing',
+      'pinjol', 'pinjaman online', 'fintech', 'ojk', 'bank', 'kartu kredit',
+      'restrukturisasi', 'nunggak', 'gagal bayar',
+    ],
+  }
+
+  // Hitung skor untuk setiap kategori
+  const scores = {}
+  for (const [category, words] of Object.entries(keywords)) {
+    scores[category] = words.filter(word => lower.includes(word)).length
+  }
+
+  // Ambil kategori dengan skor tertinggi
+  const best = Object.entries(scores).sort((a, b) => b[1] - a[1])[0]
+
+  // Jika tidak ada kata kunci yang cocok, default ke pidana (paling umum)
+  return best[1] > 0 ? best[0] : 'pidana'
+}
+
 export const CATEGORIES = [
   {
     id: 'ketenagakerjaan',
