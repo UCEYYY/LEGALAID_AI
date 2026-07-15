@@ -35,9 +35,9 @@ router.get('/', async (req, res) => {
     )
     const total = countResult[0].total
 
-    const [sessions] = await pool.execute(
-      'SELECT id, category_slug, title, created_at, updated_at FROM chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT ? OFFSET ?',
-      [req.user.id, limit, offset]
+    const [sessions] = await pool.query(
+      `SELECT id, category_slug, title, created_at, updated_at FROM chat_sessions WHERE user_id = ? ORDER BY updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
+      [req.user.id]
     )
 
     res.json({

@@ -121,9 +121,9 @@ router.get('/users', requireAdmin, async (req, res) => {
       params
     )
 
-    const [users] = await pool.execute(
-      `SELECT id, name, email, role, created_at, updated_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-      [...params, limit, offset]
+    const [users] = await pool.query(
+      `SELECT id, name, email, role, created_at, updated_at FROM users ${whereClause} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`,
+      params
     )
 
     res.json({
@@ -200,13 +200,12 @@ router.get('/sessions', requireAdmin, async (req, res) => {
 
     const [[countResult]] = await pool.execute('SELECT COUNT(*) as total FROM chat_sessions')
 
-    const [sessions] = await pool.execute(
+    const [sessions] = await pool.query(
       `SELECT cs.id, cs.category_slug, cs.title, cs.created_at, cs.updated_at,
               u.name as user_name, u.email as user_email
        FROM chat_sessions cs
        JOIN users u ON cs.user_id = u.id
-       ORDER BY cs.updated_at DESC LIMIT ? OFFSET ?`,
-      [limit, offset]
+       ORDER BY cs.updated_at DESC LIMIT ${limit} OFFSET ${offset}`
     )
 
     res.json({
