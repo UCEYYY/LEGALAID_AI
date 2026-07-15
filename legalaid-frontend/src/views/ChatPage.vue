@@ -3,6 +3,7 @@ import { ref, watch, nextTick, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChatStore } from '../stores/chatStore'
 import { useHistoryStore } from '../stores/historyStore'
+import { useAuthStore } from '../stores/authStore'
 import { generateId, CATEGORY_LABELS, EXAMPLE_QUESTIONS } from '../utils/helpers'
 import { sendChatMessage } from '../services/api'
 import ChatMessage from '../components/ChatMessage.vue'
@@ -11,12 +12,14 @@ import ChatInput from '../components/ChatInput.vue'
 const router = useRouter()
 const chatStore = useChatStore()
 const historyStore = useHistoryStore()
+const authStore = useAuthStore()
 
 const messagesEnd = ref(null)
 const chatContainer = ref(null)
 const disclaimerVisible = ref(true)
 const sidebarOpen = ref(false)
 const showHistory = ref(false)
+const currentSessionId = ref(null)
 
 const hasMessages = computed(() => chatStore.hasMessages)
 const currentCategory = computed(() => chatStore.category)
@@ -81,9 +84,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
-  // Only save to history — do NOT fullReset here because this also fires on refresh.
-  // fullReset is called explicitly in handleChangeCategory and handleReset.
-  if (chatStore.messages.length > 1) {
+  if (chatStore.messages.length > 1 && !authStore.isAuthenticated) {
     historyStore.saveSession(chatStore.category, chatStore.messages)
   }
 })
@@ -133,12 +134,15 @@ async function sendMessage(text) {
   scrollToBottom()
 
   try {
-    const result = await sendChatMessage(chatStore.category, historyMessages, text)
+    const result = await sendChatMessage(chatStore.category, historyMessages, text, currentSessionId.value)
     const lastMsg = chatStore.messages[chatStore.messages.length - 1]
     if (lastMsg && lastMsg.isStreaming) {
       lastMsg.content = result.data.reply
       lastMsg.isStreaming = false
       lastMsg.timestamp = result.data.timestamp || new Date().toISOString()
+    }
+    if (result.data.sessionId) {
+      currentSessionId.value = result.data.sessionId
     }
   } catch (error) {
     const lastMsg = chatStore.messages[chatStore.messages.length - 1]

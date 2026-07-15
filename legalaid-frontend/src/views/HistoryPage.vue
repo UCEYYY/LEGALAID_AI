@@ -1,13 +1,16 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHistoryStore } from '../stores/historyStore'
 import { useChatStore } from '../stores/chatStore'
+import { useAuthStore } from '../stores/authStore'
+import { fetchSessions, deleteSession as apiDeleteSession, fetchSession } from '../services/api'
 import HistoryListItem from '../components/HistoryListItem.vue'
 
 const router = useRouter()
 const historyStore = useHistoryStore()
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 const searchQuery = ref('')
 const filterCategory = ref('')
@@ -16,6 +19,32 @@ const showConfirmDeleteAll = ref(false)
 const showMobileFilters = ref(false)
 const currentPage = ref(1)
 const perPage = 10
+const isLoadingSessions = ref(false)
+
+onMounted(async () => {
+  if (authStore.isAuthenticated) {
+    await loadApiSessions()
+  }
+})
+
+async function loadApiSessions() {
+  isLoadingSessions.value = true
+  try {
+    const result = await fetchSessions(1, 100)
+    historyStore.sessions = result.data.sessions.map(s => ({
+      id: String(s.id),
+      category: s.category_slug,
+      title: s.title || `Konsultasi ${s.category_slug}`,
+      messages: [],
+      createdAt: s.created_at,
+      updatedAt: s.updated_at,
+    }))
+  } catch (e) {
+    console.error('Failed to load sessions:', e)
+  } finally {
+    isLoadingSessions.value = false
+  }
+}
 
 const categoryOptions = [
   { value: '', label: 'Semua Kategori' },
@@ -79,16 +108,38 @@ const paginatedSessions = computed(() => {
 
 const filteredCount = computed(() => filteredSessions.value.length)
 
-function selectSession(sessionId) {
-  const session = historyStore.getSession(sessionId)
+async function selectSession(sessionId) {
+  let session = historyStore.getSession(sessionId)
   if (!session) return
+
+  if (authStore.isAuthenticated && session.messages.length === 0) {
+    try {
+      const result = await fetchSession(sessionId)
+      session.messages = result.data.messages.map(m => ({
+        id: String(m.id),
+        role: m.role,
+        content: m.content,
+        timestamp: m.created_at,
+      }))
+    } catch (e) {
+      console.error('Failed to load session messages:', e)
+    }
+  }
+
   chatStore.fullReset()
   chatStore.setCategory(session.category)
   chatStore.messages = session.messages.map(m => ({ ...m }))
   router.push('/chat')
 }
 
-function deleteSession(sessionId) {
+async function deleteSession(sessionId) {
+  if (authStore.isAuthenticated) {
+    try {
+      await apiDeleteSession(sessionId)
+    } catch (e) {
+      console.error('Failed to delete session:', e)
+    }
+  }
   historyStore.deleteSession(sessionId)
 }
 

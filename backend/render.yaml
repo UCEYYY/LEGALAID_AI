@@ -13,6 +13,24 @@ services:
       - key: PORT
         value: 3000
       - key: GROQ_API_KEY
-        sync: false   # isi manual di dashboard Render
+        sync: false
       - key: CORS_ORIGIN
         value: "*"
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: "7d"
+      - key: ADMIN_EMAIL
+        value: "admin@legalaid.ai"
+      - key: ADMIN_PASSWORD
+        sync: false

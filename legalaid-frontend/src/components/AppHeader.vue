@@ -1,18 +1,21 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter, useRoute, RouterLink } from 'vue-router'
 import { useChatStore } from '../stores/chatStore'
+import { useAuthStore } from '../stores/authStore'
 import { CATEGORY_LABELS } from '../utils/helpers'
 
 const router = useRouter()
 const route = useRoute()
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 const mobileMenuOpen = ref(false)
 const scrolled = ref(false)
 
 const isChatPage = computed(() => route.path === '/chat')
 const currentCategoryLabel = computed(() => CATEGORY_LABELS[chatStore.category] || '')
 const hasCategory = computed(() => !!chatStore.category)
+const userInitial = computed(() => authStore.userName ? authStore.userName.charAt(0).toUpperCase() : '')
 
 const categoryIcons = {
   ketenagakerjaan: 'M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
@@ -73,6 +76,12 @@ function goHome() {
 }
 
 function handleChangeCategory() {
+  router.push('/')
+}
+
+function handleLogout() {
+  authStore.logout()
+  chatStore.fullReset()
   router.push('/')
 }
 </script>
@@ -163,6 +172,36 @@ function handleChangeCategory() {
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
+
+        <!-- Auth buttons (desktop) -->
+        <div class="hidden lg:flex items-center gap-2 ml-2">
+          <template v-if="authStore.isAuthenticated">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-navy-50">
+              <div class="w-7 h-7 rounded-full bg-royal-500 flex items-center justify-center text-white text-xs font-bold">{{ userInitial }}</div>
+              <span class="text-sm font-medium text-navy-700">{{ authStore.userName }}</span>
+            </div>
+            <button
+              @click="handleLogout"
+              class="px-3 py-1.5 rounded-2xl text-sm font-medium text-navy-500 hover:text-red-600 hover:bg-red-50 transition-all"
+            >
+              Keluar
+            </button>
+          </template>
+          <template v-else>
+            <RouterLink
+              to="/login"
+              class="px-4 py-1.5 rounded-2xl text-sm font-medium text-navy-600 hover:bg-navy-50 transition-all"
+            >
+              Masuk
+            </RouterLink>
+            <RouterLink
+              to="/register"
+              class="px-4 py-1.5 rounded-2xl bg-royal-500 text-white text-sm font-semibold hover:bg-royal-600 transition-all shadow-sm"
+            >
+              Daftar
+            </RouterLink>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -193,6 +232,40 @@ function handleChangeCategory() {
           >
             Ganti Kategori
           </button>
+
+          <!-- Auth buttons (mobile) -->
+          <template v-if="authStore.isAuthenticated">
+            <div class="border-t border-gray-100 pt-3 mt-3">
+              <div class="flex items-center gap-2 px-4 py-2.5">
+                <div class="w-8 h-8 rounded-full bg-royal-500 flex items-center justify-center text-white text-sm font-bold">{{ userInitial }}</div>
+                <span class="text-sm font-medium text-navy-700">{{ authStore.userName }}</span>
+              </div>
+              <button
+                @click="handleLogout"
+                class="w-full text-left px-4 py-2.5 rounded-2xl text-sm font-medium text-red-500 hover:bg-red-50 transition-all"
+              >
+                Keluar
+              </button>
+            </div>
+          </template>
+          <template v-else>
+            <div class="border-t border-gray-100 pt-3 mt-3 space-y-1">
+              <RouterLink
+                to="/login"
+                @click="mobileMenuOpen = false"
+                class="block px-4 py-2.5 rounded-2xl text-sm font-medium text-navy-600 hover:bg-navy-50 transition-all"
+              >
+                Masuk
+              </RouterLink>
+              <RouterLink
+                to="/register"
+                @click="mobileMenuOpen = false"
+                class="block px-4 py-2.5 rounded-2xl text-sm font-medium text-white bg-royal-500 hover:bg-royal-600 transition-all text-center"
+              >
+                Daftar
+              </RouterLink>
+            </div>
+          </template>
         </div>
       </div>
     </transition>
