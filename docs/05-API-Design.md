@@ -11,163 +11,322 @@
 | Base URL (Development) | `http://localhost:3000` |
 | Base URL (Production) | `https://legalaid-api.railway.app` |
 | Content-Type | `application/json` |
-| Autentikasi | Tidak diperlukan (v1.0 — Guest only) |
+| Autentikasi | JWT Bearer Token (untuk endpoint yang dilindungi) |
 
 ---
 
-## 5.1 Endpoint: `POST /api/chat`
+## 5.1 Autentikasi
 
-Mengirim pesan pengguna ke backend, yang kemudian meneruskannya ke Google Gemini API dan mengembalikan respons AI.
+### 5.1.1 `POST /api/auth/register`
 
----
+Registrasi pengguna baru.
 
-### 5.1.1 Request
+**Request Body:**
 
-**Method:** `POST`  
-**URL:** `/api/chat`
-
-#### Request Body
-
-| Field | Tipe | Required | Deskripsi |
+| Field | Tipe | Required | Validasi |
 |---|---|---|---|
-| `category` | `String` | Ya | Kategori hukum aktif. Nilai valid: `'ketenagakerjaan'`, `'konsumen'`, `'keluarga'`, `'pertanahan'`, `'pidana'`, `'utang_kredit'` |
-| `messages` | `Array<{role: string, content: string}>` | Ya | Riwayat percakapan sebelumnya. `role`: `'user'` atau `'assistant'`. Maksimal 20 pesan terakhir. |
-| `userMessage` | `String` | Ya | Pesan terbaru dari pengguna. Maksimal 2000 karakter. |
+| `name` | String | Ya | 2–100 karakter |
+| `email` | String | Ya | Format email valid, unique |
+| `password` | String | Ya | Minimal 6 karakter |
 
-#### Contoh Request Body
-
-```json
-{
-  "category": "ketenagakerjaan",
-  "messages": [
-    {
-      "role": "user",
-      "content": "Saya baru saja di-PHK tanpa surat peringatan."
-    },
-    {
-      "role": "assistant",
-      "content": "Pemecatan tanpa SP merupakan pelanggaran..."
-    }
-  ],
-  "userMessage": "Berapa besaran pesangon yang seharusnya saya terima?"
-}
-```
-
----
-
-### 5.1.2 Response — Success (HTTP 200)
-
-#### Response Body
-
-| Field | Tipe | Deskripsi |
-|---|---|---|
-| `success` | `Boolean` | Selalu `true` jika HTTP 200 |
-| `data.reply` | `String` | Teks jawaban AI dalam Bahasa Indonesia |
-| `data.category` | `String` | Kategori hukum yang digunakan dalam respons ini |
-| `data.timestamp` | `String (ISO 8601)` | Waktu respons dibuat di server |
-
-#### Contoh Response Body (200 OK)
+**Response (201 Created):**
 
 ```json
 {
   "success": true,
   "data": {
-    "reply": "Berdasarkan UU Cipta Kerja No. 11 Tahun 2020 dan PP No. 35 Tahun 2021, besaran pesangon yang Anda terima dihitung berdasarkan masa kerja...",
-    "category": "ketenagakerjaan",
-    "timestamp": "2026-06-01T09:05:00.000Z"
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": { "id": 1, "name": "Budi", "email": "budi@mail.com", "role": "user" }
   }
 }
 ```
 
+**Error Responses:**
+
+| HTTP Status | Kode | Penyebab |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Validasi input gagal |
+| 409 | `EMAIL_EXISTS` | Email sudah terdaftar |
+
 ---
 
-### 5.1.3 Response — Error
+### 5.1.2 `POST /api/auth/login`
 
-| HTTP Status | Kode Error | Penyebab | Contoh Response Body |
-|---|---|---|---|
-| `400 Bad Request` | `INVALID_CATEGORY` | Nilai `category` tidak valid atau kosong | `{ "success": false, "error": { "code": "INVALID_CATEGORY", "message": "Kategori hukum tidak valid." } }` |
-| `400 Bad Request` | `MESSAGE_TOO_LONG` | `userMessage` melebihi 2000 karakter | `{ "success": false, "error": { "code": "MESSAGE_TOO_LONG", "message": "Pesan terlalu panjang. Maksimal 2000 karakter." } }` |
-| `429 Too Many Requests` | `RATE_LIMIT_EXCEEDED` | IP mengirim lebih dari 20 request per menit | `{ "success": false, "error": { "code": "RATE_LIMIT_EXCEEDED", "message": "Terlalu banyak permintaan. Coba lagi dalam 1 menit." } }` |
-| `503 Service Unavailable` | `GEMINI_API_ERROR` | Google Gemini API tidak merespons atau error | `{ "success": false, "error": { "code": "GEMINI_API_ERROR", "message": "Layanan AI sedang tidak tersedia. Coba lagi dalam beberapa saat." } }` |
-| `500 Internal Server Error` | `INTERNAL_ERROR` | Error tidak terduga di server | `{ "success": false, "error": { "code": "INTERNAL_ERROR", "message": "Terjadi kesalahan internal. Hubungi administrator." } }` |
+Login pengguna.
 
-#### Format Error Response (Standar)
+**Request Body:**
+
+| Field | Tipe | Required |
+|---|---|---|
+| `email` | String | Ya |
+| `password` | String | Ya |
+
+**Response (200 OK):**
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Pesan error yang dapat ditampilkan ke pengguna."
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIs...",
+    "user": { "id": 1, "name": "Budi", "email": "budi@mail.com", "role": "user" }
+  }
+}
+```
+
+**Error Responses:**
+
+| HTTP Status | Kode | Penyebab |
+|---|---|---|
+| 401 | `INVALID_CREDENTIALS` | Email atau password salah |
+
+---
+
+### 5.1.3 `GET /api/auth/me`
+
+Mendapatkan profil pengguna yang sedang login.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "id": 1, "name": "Budi", "email": "budi@mail.com", "role": "user" }
   }
 }
 ```
 
 ---
 
-## 5.2 Endpoint: `GET /health`
+## 5.2 Chat
 
-Endpoint health check untuk memverifikasi bahwa backend berjalan dan dapat terhubung ke Gemini API.
+### 5.2.1 `POST /api/chat`
 
-| Field | Detail |
-|---|---|
-| **Method** | `GET` |
-| **URL** | `/health` |
-| **Autentikasi** | Tidak diperlukan |
+Mengirim pesan ke AI dan mendapatkan respons.
 
-### Response (200 OK — Sistem Normal)
+**Headers:** `Authorization: Bearer <token>` (opsional — untuk user terdaftar)
+
+**Request Body:**
+
+| Field | Tipe | Required | Deskripsi |
+|---|---|---|---|
+| `category` | String | Ya | Kategori hukum: `'ketenagakerjaan'`, `'konsumen'`, `'keluarga'`, `'pertanahan'`, `'pidana'`, `'utang_kredit'` |
+| `messages` | Array | Ya | Riwayat percakapan. Maksimal 20 item. |
+| `userMessage` | String | Ya | Pesan terbaru. Maksimal 2000 karakter. |
+| `sessionId` | Number | Tidak | ID sesi yang sudah ada (untuk melanjutkan sesi) |
+
+**Contoh Request:**
+
+```json
+{
+  "category": "ketenagakerjaan",
+  "messages": [
+    { "role": "user", "content": "Saya di-PHK tanpa surat peringatan." },
+    { "role": "assistant", "content": "Pemecatan tanpa SP merupakan pelanggaran..." }
+  ],
+  "userMessage": "Berapa pesangon yang seharusnya saya terima?"
+}
+```
+
+**Response (200 OK) — Guest:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Berdasarkan UU Cipta Kerja No. 11/2020...",
+    "category": "ketenagakerjaan",
+    "timestamp": "2026-07-15T09:05:00.000Z"
+  }
+}
+```
+
+**Response (200 OK) — User Terdaftar:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "Berdasarkan UU Cipta Kerja No. 11/2020...",
+    "category": "ketenagakerjaan",
+    "sessionId": 42,
+    "timestamp": "2026-07-15T09:05:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| HTTP Status | Kode | Penyebab |
+|---|---|---|
+| 400 | `VALIDATION_ERROR` | Validasi input gagal |
+| 429 | `RATE_LIMIT_EXCEEDED` | Kuota API habis |
+| 503 | `AI_API_ERROR` | Groq API tidak tersedia |
+
+---
+
+## 5.3 Sesi (User Terdaftar)
+
+Semua endpoint di bawah ini memerlukan `Authorization: Bearer <token>`.
+
+### 5.3.1 `GET /api/sessions`
+
+Mendapatkan daftar sesi pengguna yang sedang login.
+
+**Query Params:** `page` (default: 1), `limit` (default: 10, max: 50)
+
+**Response (200 OK):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sessions": [
+      { "id": 1, "category_slug": "ketenagakerjaan", "title": "Konsultasi ketenagakerjaan", "created_at": "...", "updated_at": "..." }
+    ],
+    "pagination": { "page": 1, "limit": 10, "total": 25, "totalPages": 3 }
+  }
+}
+```
+
+### 5.3.2 `POST /api/sessions`
+
+Membuat sesi baru.
+
+**Request Body:** `{ "categorySlug": "ketenagakerjaan", "title": "Judul Sesi" }`
+
+### 5.3.3 `GET /api/sessions/:id`
+
+Mendapatkan detail sesi beserta semua pesan.
+
+### 5.3.4 `PATCH /api/sessions/:id`
+
+Memperbarui judul sesi.
+
+### 5.3.5 `DELETE /api/sessions/:id`
+
+Menghapus sesi dan semua pesannya (CASCADE).
+
+### 5.3.6 `POST /api/sessions/:id/messages`
+
+Menambahkan pesan ke sesi yang sudah ada.
+
+---
+
+## 5.4 Admin
+
+Semua endpoint admin memerlukan `Authorization: Bearer <token>` dengan role `admin`.
+
+### 5.4.1 `POST /api/admin/login`
+
+Login admin (endpoint terpisah dari login user).
+
+**Request Body:** `{ "email": "admin@legalaid.ai", "password": "admin123" }`
+
+**Response:** JWT token dengan `role: 'admin'`
+
+### 5.4.2 `GET /api/admin/stats`
+
+Statistik dashboard: total pengguna, sesi, pesan, distribusi kategori, 5 pengguna terbaru.
+
+### 5.4.3 `GET /api/admin/users`
+
+Daftar semua pengguna (role: user) dengan pencarian dan paginasi.
+
+**Query Params:** `page`, `limit`, `search`
+
+### 5.4.4 `GET /api/admin/users/:id`
+
+Detail pengguna beserta daftar sesi konsultasinya.
+
+### 5.4.5 `DELETE /api/admin/users/:id`
+
+Menghapus pengguna dan semua sesi/pesan terkait (CASCADE).
+
+### 5.4.6 `GET /api/admin/sessions`
+
+Semua sesi konsultasi dari semua pengguna, dengan paginasi.
+
+### 5.4.7 `GET /api/admin/sessions/:id`
+
+Detail sesi beserta semua pesan.
+
+### 5.4.8 Manajemen Kategori
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| GET | `/api/admin/categories` | Daftar semua kategori |
+| POST | `/api/admin/categories` | Buat kategori baru |
+| PATCH | `/api/admin/categories/:id` | Perbarui kategori |
+| DELETE | `/api/admin/categories/:id` | Hapus kategori |
+
+### 5.4.9 Manajemen FAQ
+
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| GET | `/api/admin/faq` | Daftar semua FAQ |
+| POST | `/api/admin/faq` | Buat FAQ baru |
+| PATCH | `/api/admin/faq/:id` | Perbarui FAQ |
+| DELETE | `/api/admin/faq/:id` | Hapus FAQ |
+
+---
+
+## 5.5 Health Check
+
+### `GET /health` atau `GET /api/health`
+
+**Response (200 OK):**
 
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
-  "timestamp": "2026-06-01T09:00:00.000Z"
-}
-```
-
-### Response (503 Service Unavailable — Gemini Tidak Dapat Dijangkau)
-
-```json
-{
-  "status": "degraded",
-  "error": "Cannot reach Gemini API"
+  "version": "2.0.0",
+  "timestamp": "2026-07-15T09:00:00.000Z"
 }
 ```
 
 ---
 
-## 5.3 Aturan Validasi Input
+## 5.6 Aturan Validasi Input
 
 | Field | Validasi | Kode Error |
 |---|---|---|
-| `category` | Harus salah satu dari 6 nilai yang valid | `INVALID_CATEGORY` |
+| `category` | Harus salah satu dari 6 nilai valid | `INVALID_CATEGORY` |
 | `userMessage` | Tidak boleh kosong; maksimal 2000 karakter | `MESSAGE_TOO_LONG` |
-| `messages` | Array; maksimal 20 item; setiap item memiliki field `role` dan `content` | `INVALID_MESSAGES` |
+| `messages` | Array; maksimal 20 item | `INVALID_MESSAGES` |
 | `messages[].role` | Harus `'user'` atau `'assistant'` | `INVALID_ROLE` |
+| `email` | Format email valid | `VALIDATION_ERROR` |
+| `password` | Minimal 6 karakter (register) | `VALIDATION_ERROR` |
 
 ---
 
-## 5.4 Rate Limiting
+## 5.7 Rate Limiting
 
 | Aturan | Nilai |
 |---|---|
+| Endpoint | `POST /api/chat` |
 | Maksimal request per IP | 20 request per menit |
 | Window reset | 60 detik |
-| Header respons saat limit tercapai | `Retry-After: 60` |
-| HTTP status saat limit tercapai | `429 Too Many Requests` |
+| HTTP status saat limit | `429 Too Many Requests` |
 
 ---
 
-## 5.5 Keamanan Backend
+## 5.8 Keamanan Backend
 
 | Mekanisme | Detail |
 |---|---|
-| API Key Storage | Disimpan di `.env` server-side, tidak pernah dikirim ke client |
-| CORS | Hanya mengizinkan origin frontend yang terdaftar |
-| Input Sanitasi | Strip karakter kontrol; batasi panjang input |
-| Rate Limiting | `express-rate-limit` — 20 req/menit per IP |
+| API Key Storage | Groq API key di `.env` server-side, tidak pernah dikirim ke client |
+| JWT Secret | Di `.env`, digunakan untuk sign/verify token |
+| Password Hashing | bcryptjs, 10 salt rounds |
+| CORS | Hanya mengizinkan origin frontend |
+| Rate Limiting | `express-rate-limit` — 20 req/menit untuk `/api/chat` |
 | Input Validation | `express-validator` — validasi semua field request |
+| Helmet | HTTP security headers |
+| Trust Proxy | `app.set('trust proxy', 1)` — untuk rate limiting di Railway |
+| Admin Route Guard | `requireAdmin` middleware — verifikasi JWT + role check |
 
 ---
 
-*LegalAid AI — SDD v1.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*
+*LegalAid AI — SDD v2.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*

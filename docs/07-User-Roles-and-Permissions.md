@@ -2,56 +2,190 @@
 
 **LegalAid AI — Konsultasi Hukum Digital untuk Masyarakat Indonesia**
 
-> **Catatan revisi penting:** Bab ini direvisi untuk menghilangkan inkonsistensi antara scope v1.0 dan fitur masa depan. Role Admin dan autentikasi JWT secara eksplisit ditandai sebagai 'Direncanakan v2.0' dan tidak memiliki implementasi aktif di v1.0.
+> Pada versi 2.0, LegalAid AI telah mengimplementasikan sistem autentikasi JWT dengan tiga role: Guest, User, dan Admin. Semua role telah aktif dan berfungsi.
 
 ---
 
 ## 7.1 Daftar Role
 
-| Role | Kode | Deskripsi | Status di v1.0 |
+| Role | Kode | Deskripsi | Status |
 |---|---|---|---|
-| Tamu (Guest) | `ROLE_GUEST` | Pengguna yang belum login. Seluruh fitur v1.0 tersedia untuk role ini. | **AKTIF** — satu-satunya role di v1.0 |
-| Pengguna Terdaftar | `ROLE_USER` | Pengguna yang telah registrasi. Dapat menyimpan riwayat di cloud dan mengakses dari multiple device. | **DIRENCANAKAN v2.0** — belum diimplementasikan |
-| Administrator | `ROLE_ADMIN` | Pengelola sistem. Akses ke dashboard monitoring dan konfigurasi system prompt. | **DIRENCANAKAN v2.0** — belum diimplementasikan |
-
-> **Mengapa Admin tidak ada di v1.0:** Karena tidak ada database server-side di v1.0, tidak ada data yang dapat dipantau. Statistik penggunaan tidak dapat dihitung tanpa server-side logging. Dashboard admin hanya akan bermakna setelah v2.0 dengan Supabase diimplementasikan.
+| Tamu (Guest) | `ROLE_GUEST` | Pengguna yang belum login. Dapat mengakses chat tanpa registrasi. Riwayat tersimpan di localStorage. | **AKTIF** |
+| Pengguna Terdaftar | `ROLE_USER` | Pengguna yang telah registrasi. Riwayat tersimpan di MySQL. Dapat diakses dari multiple device. | **AKTIF** |
+| Administrator | `ROLE_ADMIN` | Pengelola sistem. Akses ke dashboard statistik, manajemen pengguna, sesi, kategori, dan FAQ. | **AKTIF** |
 
 ---
 
-## 7.2 Permission Matrix (Versi 1.0 — Aktual)
+## 7.2 Permission Matrix (Versi 2.0 — Aktual)
 
-| Fitur / Aksi | Guest (v1.0) | User (v2.0) | Admin (v2.0) |
+| Fitur / Aksi | Guest | User | Admin |
 |---|---|---|---|
-| Melihat halaman beranda | ✅ Aktif | ✅ | ✅ |
-| Memilih kategori hukum | ✅ Aktif | ✅ | ✅ |
-| Melakukan konsultasi AI | ✅ Aktif | ✅ | ✅ |
-| Menyimpan riwayat di browser (localStorage) | ✅ Aktif | ✅ | ✅ |
-| Menghapus riwayat di browser | ✅ Aktif | ✅ | ✅ |
-| Salin teks jawaban AI | ✅ Aktif | ✅ | ✅ |
-| Reset percakapan | ✅ Aktif | ✅ | ✅ |
-| Menyimpan riwayat di cloud (server) | ❌ Tidak tersedia | ✅ v2.0 | ✅ v2.0 |
-| Akses riwayat dari device lain | ❌ Tidak tersedia | ✅ v2.0 | ✅ v2.0 |
-| Mengakses dashboard admin | ❌ Tidak ada | ❌ Tidak ada | ✅ v2.0 |
-| Memantau statistik server | ❌ Tidak ada data server | ❌ Tidak ada | ✅ v2.0 |
-| Konfigurasi system prompt | ❌ Tidak ada | ❌ Tidak ada | ✅ v2.0 |
+| Melihat halaman beranda | ✅ | ✅ | ✅ |
+| Memilih kategori hukum | ✅ | ✅ | ✅ |
+| Melakukan konsultasi AI | ✅ | ✅ | ✅ |
+| Menyimpan riwayat di browser (localStorage) | ✅ | ✅ | ✅ |
+| Menghapus riwayat di browser | ✅ | ✅ | ✅ |
+| Salin teks jawaban AI | ✅ | ✅ | ✅ |
+| Reset percakapan | ✅ | ✅ | ✅ |
+| Registrasi & Login | ✅ | ✅ | ✅ |
+| Menyimpan sesi ke MySQL (server) | ❌ | ✅ | ✅ |
+| Melihat riwayat dari database | ❌ | ✅ | ✅ |
+| Melihat dashboard admin | ❌ | ❌ | ✅ |
+| Memantau statistik server | ❌ | ❌ | ✅ |
+| Mengelola pengguna (lihat, hapus) | ❌ | ❌ | ✅ |
+| Mengelola sesi konsultasi (lihat) | ❌ | ❌ | ✅ |
+| Mengelola kategori (CRUD) | ❌ | ❌ | ✅ |
+| Mengelola FAQ (CRUD) | ❌ | ❌ | ✅ |
+| Login admin (endpoint terpisah) | ❌ | ❌ | ✅ |
 
 ---
 
-## 7.3 Alur Autentikasi (Direncanakan v2.0)
+## 7.3 Alur Autentikasi
 
-Alur autentikasi menggunakan Supabase Auth yang direncanakan untuk v2.0:
+### 7.3.1 Registrasi
 
 | Langkah | Aksi | Detail Teknis |
 |---|---|---|
-| 1 | Pengguna membuka halaman Login dan memasukkan email + password | Vue Router guard mengarahkan pengguna yang belum login ke `/login` |
-| 2 | Frontend mengirim kredensial ke Supabase Auth | `supabase.auth.signInWithPassword({ email, password })` |
-| 3 | Supabase memverifikasi dan mengembalikan JWT token + refresh token | JWT disimpan secara otomatis di Supabase client library |
-| 4 | Setiap request ke backend menyertakan JWT di Authorization header | `Authorization: Bearer <jwt_token>` |
-| 5 | Backend memverifikasi JWT sebelum memproses request ke endpoint protected | Middleware `verifyJWT` menggunakan Supabase Admin SDK |
-| 6 | Jika token expired, Supabase client melakukan refresh token otomatis | `supabase.auth.onAuthStateChange()` menangani refresh otomatis |
+| 1 | Pengguna membuka `/register` dan mengisi form | Nama, email, password, konfirmasi password |
+| 2 | Frontend mengirim ke `POST /api/auth/register` | Body: `{ name, email, password }` |
+| 3 | Backend memvalidasi input | express-validator: email valid, password >= 6 char, nama 2–100 char |
+| 4 | Backend mengecek email unik di MySQL | `SELECT id FROM users WHERE email = ?` |
+| 5 | Backend hash password dengan bcryptjs | `bcrypt.hash(password, 10)` |
+| 6 | Backend insert user baru | `INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'user')` |
+| 7 | Backend generate JWT | Payload: `{ id, email, role }`, expiry: 7 hari |
+| 8 | Frontend simpan token | `localStorage.setItem('legalaid_token', token)` |
+| 9 | Frontend fetch profile | `GET /api/auth/me` → update authStore |
 
-> **Implementasi v1.0 tidak memerlukan autentikasi.** Semua endpoint `/api/chat` dapat diakses tanpa JWT. Endpoint `/api/admin/*` tidak ada di v1.0 dan hanya akan dibuat saat v2.0 dikembangkan.
+### 7.3.2 Login
+
+| Langkah | Aksi | Detail Teknis |
+|---|---|---|
+| 1 | Pengguna membuka `/login` dan mengisi email + password | |
+| 2 | Frontend mengirim ke `POST /api/auth/login` | Body: `{ email, password }` |
+| 3 | Backend query user dari MySQL | `SELECT id, name, email, password_hash, role FROM users WHERE email = ?` |
+| 4 | Backend verifikasi password | `bcrypt.compare(password, user.password_hash)` |
+| 5 | Backend generate JWT | Payload: `{ id, email, role }` |
+| 6 | Frontend simpan token + redirect | Ke `/chat` untuk user, ke `/admin/dashboard` untuk admin |
+
+### 7.3.3 Login Admin
+
+| Langkah | Aksi | Detail Teknis |
+|---|---|---|
+| 1 | Admin membuka `/admin/login` | Halaman login khusus admin (dark theme) |
+| 2 | Frontend mengirim ke `POST /api/admin/login` | Body: `{ email, password }` |
+| 3 | Backend verifikasi + cek role === 'admin' | Jika bukan admin, return 401 |
+| 4 | Backend generate JWT | Payload: `{ id, email, role: 'admin' }` |
+| 5 | Frontend simpan token + redirect | Ke `/admin/dashboard` |
 
 ---
 
-*LegalAid AI — SDD v1.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*
+## 7.4 Middleware Autentikasi
+
+| Middleware | Fungsi | Digunakan Di |
+|---|---|---|
+| `authenticateToken` | Verifikasi JWT wajib. Return 401 jika token tidak ada/invalid. | `/api/auth/me`, `/api/sessions/*` |
+| `requireAdmin` | Verifikasi JWT + cek `role === 'admin'`. Return 403 jika bukan admin. | `/api/admin/*` |
+| `optionalAuth` | Verifikasi JWT jika ada. Jika tidak ada, set `req.user = null` dan lanjut. | `POST /api/chat` |
+
+### Implementasi
+
+```javascript
+// backend/src/middleware/auth.js
+export function authenticateToken(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1]
+  if (!token) return res.status(401).json({ error: 'Token tidak ditemukan.' })
+  
+  try {
+    req.user = jwt.verify(token, env.jwt.secret)
+    next()
+  } catch {
+    return res.status(401).json({ error: 'Token tidak valid.' })
+  }
+}
+
+export function requireAdmin(req, res, next) {
+  authenticateToken(req, res, () => {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Akses ditolak.' })
+    }
+    next()
+  })
+}
+
+export function optionalAuth(req, res, next) {
+  const token = req.headers['authorization']?.split(' ')[1]
+  try { req.user = jwt.verify(token, env.jwt.secret) }
+  catch { req.user = null }
+  next()
+}
+```
+
+---
+
+## 7.5 Frontend Route Guards
+
+Vue Router menggunakan `meta` field untuk mengontrol akses halaman:
+
+| Meta | Guard Logic | Halaman |
+|---|---|---|
+| `requiresAuth: true` | Jika tidak login → redirect ke `/login` | `/chat`, `/history` |
+| `requiresAdmin: true` | Jika tidak login → redirect ke `/admin/login`; jika login tapi bukan admin → redirect ke `/` | Semua `/admin/*` |
+| `guestOnly: true` | Jika sudah login → redirect ke `/chat` | `/login`, `/register` |
+
+```javascript
+// legalaid-frontend/src/router/index.js
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem('legalaid_token')
+  
+  if (to.meta.requiresAuth && !token) return next('/login')
+  if (to.meta.requiresAdmin && !token) return next('/admin/login')
+  if (to.meta.guestOnly && token) return next('/chat')
+  next()
+})
+```
+
+---
+
+## 7.6 Data Flow Autentikasi
+
+```
+┌─────────────┐     POST /api/auth/login      ┌─────────────┐
+│   Frontend   │ ──────────────────────────→   │   Backend    │
+│   (Vue.js)   │                               │  (Express)   │
+│              │  ←──────────────────────────  │              │
+│              │   { token, user }             │              │
+└──────┬──────┘                               └──────┬──────┘
+       │                                              │
+       │ localStorage.setItem('legalaid_token')       │ MySQL SELECT
+       │                                              │ bcrypt.compare
+       │                                              │ jwt.sign
+       ▼                                              ▼
+┌─────────────┐                               ┌─────────────┐
+│  localStorage│                               │    MySQL     │
+│   token      │                               │   users      │
+└──────┬──────┘                               └─────────────┘
+       │
+       │ Authorization: Bearer <token>
+       ▼
+┌─────────────┐
+│  Protected   │
+│  Endpoints   │
+└─────────────┘
+```
+
+---
+
+## 7.7 Admin Default
+
+| Field | Nilai |
+|---|---|
+| Email | `admin@legalaid.ai` |
+| Password | `admin123` |
+| Role | `admin` |
+| Dibuat oleh | `seed.js` saat migrasi database pertama kali |
+
+> **Catatan keamanan:** Password admin default harus diubah di production. Saat ini masih menggunakan default untuk kemudahan testing.
+
+---
+
+*LegalAid AI — SDD v2.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*

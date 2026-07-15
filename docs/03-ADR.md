@@ -4,6 +4,8 @@
 
 Setiap keputusan teknis penting dalam pembangunan LegalAid AI didokumentasikan dalam format ADR. Dokumen ini mencatat konteks, keputusan, alasan berbasis kebutuhan sistem, dan konsekuensi dari setiap pilihan teknologi.
 
+---
+
 ## ADR-001: Pemilihan Vue.js sebagai Frontend Framework
 
 | Field | Detail |
@@ -15,36 +17,35 @@ Setiap keputusan teknis penting dalam pembangunan LegalAid AI didokumentasikan d
 
 **Keputusan:** Menggunakan **Vue.js 3** dengan Composition API, sintaks `<script setup>`, dan **Pinia** sebagai state manager.
 
-**Alasan Berbasis Sistem:** (1) Reaktivitas bawaan Vue.js cocok untuk UI chat real-time yang memerlukan state update otomatis saat pesan baru masuk. (2) Pinia lebih ringan dan lebih mudah diintegrasikan dengan plugin `persistedstate` untuk sinkronisasi ke localStorage dibanding Redux/Vuex. (3) Single File Component (SFC) mempermudah pemisahan komponen chat, sidebar, dan header secara modular. (4) Vite sebagai build tool memberikan Hot Module Replacement (HMR) yang cepat selama development. (5) Ekosistem Vue Router mendukung navigasi SPA tanpa full page reload.
+**Alasan Berbasis Sistem:** (1) Reaktivitas bawaan Vue.js cocok untuk UI chat real-time. (2) Pinia lebih ringan dan mudah diintegrasikan dengan plugin `persistedstate`. (3) SFC mempermudah pemisahan komponen. (4) Vite memberikan HMR yang cepat. (5) Vue Router mendukung navigasi SPA dengan route guards untuk autentikasi.
 
-**Opsi yang Dipertimbangkan:** React (lebih mature, ekosistem lebih besar namun boilerplate lebih tinggi), Svelte (lebih ringan namun ekosistem lebih kecil dan kurang familiar), Vanilla JS (tidak memiliki reaktivitas dan state management yang memadai untuk aplikasi chat).
+**Konsekuensi (+):** Development lebih cepat. State management mudah. Bundle lebih kecil dibanding Angular.
 
-**Konsekuensi (+):** Development lebih cepat dengan template Vue yang ekspresif. State management percakapan mudah dikelola dengan Pinia. Bundle lebih kecil dibanding Angular.
-
-**Konsekuensi (-):** Ekosistem komponen enterprise lebih kecil dibanding React untuk fitur-fitur advanced yang mungkin dibutuhkan di v2.0+.
+**Konsekuensi (-):** Ekosistem komponen enterprise lebih kecil dibanding React.
 
 ---
 
-## ADR-002: Pemilihan Google Gemini API sebagai Engine AI
+## ADR-002: Pemilihan Groq API (Llama 3.3 70B) sebagai Engine AI
 
 | Field | Detail |
 |---|---|
 | **Status** | Accepted |
-| **Tanggal** | 1 Juni 2026 |
+| **Tanggal** | 15 Juli 2026 |
+| **Revisi** | Menggantikan ADR asli yang menggunakan Google Gemini API |
 
-**Konteks:** Aplikasi membutuhkan LLM yang mampu menjawab pertanyaan hukum dalam Bahasa Indonesia dengan kualitas yang memadai, dapat diakses dari server Node.js, dan sesuai untuk konteks penelitian skripsi (tanpa anggaran API berbayar).
+**Konteks:** Aplikasi membutuhkan LLM yang mampu menjawab pertanyaan hukum dalam Bahasa Indonesia dengan kualitas memadai, dapat diakses dari server Node.js, dan memiliki free tier yang stabil.
 
-**Keputusan:** Menggunakan **Google Gemini 1.5 Flash** melalui library `@google/generative-ai`.
+**Keputusan:** Menggunakan **Groq API** dengan model **Llama 3.3 70B Versatile** melalui library `groq-sdk`.
 
-**Alasan Berbasis Sistem:** (1) Kualitas pemahaman Bahasa Indonesia: Gemini dilatih dengan dataset multibahasa termasuk teks hukum Indonesia, menghasilkan respons yang natural dan relevan secara kontekstual. (2) Kemampuan instruction following: Gemini Flash menunjukkan kemampuan mengikuti system prompt panjang dan terstruktur dengan baik — penting untuk mengontrol persona, format, dan batasan konten. (3) Free tier yang cukup untuk development: paket gratis menyediakan kuota request yang cukup untuk development dan pengujian skala kecil tanpa persyaratan kartu kredit. (4) Dukungan streaming response: API mendukung streaming token, memungkinkan UI menampilkan jawaban secara bertahap dan meningkatkan persepsi performa pengguna.
+**Alasan Berbasis Sistem:** (1) Groq menawarkan inference speed yang sangat tinggi melalui custom LPU hardware — response time lebih cepat dari provider lain. (2) Free tier Groq memberikan kuota yang cukup untuk development dan demo. (3) Llama 3.3 70B memiliki kualitas Bahasa Indonesia yang baik untuk konteks hukum. (4) API kompatibel dengan format OpenAI, memudahkan integrasi. (5) Tidak memerlukan kartu kredit untuk free tier.
 
-**Opsi yang Dipertimbangkan:** OpenAI GPT-4o (kualitas tinggi namun tidak ada free tier permanen, membutuhkan biaya), Anthropic Claude Haiku (free tier terbatas, kualitas baik namun dokumentasi integrasi Node.js lebih sedikit), LLM lokal via Ollama (tidak membutuhkan API key namun membutuhkan hardware khusus, tidak praktis untuk deployment publik).
+**Opsi yang Dipertimbangkan:** Google Gemini API (digunakan di v1.0, namun free tier kurang stabil), OpenAI GPT-4o (kualitas tinggi namun tidak ada free tier permanen), Anthropic Claude (free tier terbatas).
 
-**Risiko yang Diakui:** Kebijakan free tier Google dapat berubah sewaktu-waktu. Jawaban AI dapat berubah antar versi model. Bergantung pada ketersediaan layanan pihak ketiga (uptime Google).
+**Risiko yang Diakui:** Kebijakan free tier Groq dapat berubah. Model Llama 3.3 memiliki training cutoff tertentu.
 
-**Konsekuensi (+):** Tidak ada biaya selama development. Kualitas Bahasa Indonesia sangat baik. Mendukung streaming.
+**Konsekuensi (+):** Response time sangat cepat. Tidak ada biaya selama development. API sederhana.
 
-**Konsekuensi (-):** Bergantung pada layanan eksternal Google. Model cutoff date membatasi pengetahuan regulasi terbaru.
+**Konsekuensi (-):** Bergantung pada layanan eksternal Groq. Model open-source memiliki batasan tertentu dibanding model proprietari.
 
 ---
 
@@ -55,73 +56,131 @@ Setiap keputusan teknis penting dalam pembangunan LegalAid AI didokumentasikan d
 | **Status** | Accepted |
 | **Tanggal** | 1 Juni 2026 |
 
-**Konteks:** Diperlukan backend sebagai proxy aman antara frontend dan Gemini API untuk menyembunyikan API key dari kode sisi klien, melakukan validasi input, dan menerapkan rate limiting.
+**Konteks:** Diperlukan backend sebagai proxy aman antara frontend dan AI API, autentikasi pengguna, serta manajemen data.
 
-**Keputusan:** Menggunakan **Node.js** dengan framework **Express.js** sebagai backend minimal.
+**Keputusan:** Menggunakan **Node.js** dengan framework **Express.js** sebagai backend.
 
-**Alasan Berbasis Sistem:** (1) Keamanan API key: API key Gemini disimpan di environment variable server-side (`.env`), tidak pernah dikirim ke browser. (2) Input validation & sanitasi: Express middleware (`express-validator`) memvalidasi dan membersihkan input sebelum diteruskan ke Gemini — mencegah prompt injection dan input berbahaya. (3) Rate limiting: Middleware `express-rate-limit` dapat mencegah abuse API dan melindungi kuota Gemini. (4) Konsistensi bahasa: Full-stack JavaScript memungkinkan berbagi tipe data (TypeScript interfaces) antara frontend dan backend tanpa konversi. (5) Library support: `@google/generative-ai` tersedia secara native untuk Node.js dengan dukungan TypeScript.
+**Alasan Berbasis Sistem:** (1) API key aman di server-side. (2) Input validation dengan `express-validator`. (3) Rate limiting dengan `express-rate-limit`. (4) Full-stack JavaScript. (5) Middleware pattern untuk autentikasi JWT.
 
-**Konsekuensi (+):** API key aman. Backend dapat menerapkan rate limiting, logging, dan sanitasi input. Stack JavaScript konsisten.
+**Konsekuensi (+):** API key aman. Rate limiting, logging, sanitasi input. Stack konsisten.
 
-**Konsekuensi (-):** Menambah satu hop jaringan (latensi < 50ms dalam kondisi normal). Tidak seoptimal bahasa statically-typed untuk performa tinggi, namun memadai untuk skala proyek ini.
+**Konsekuensi (-):** Satu hop jaringan tambahan.
 
 ---
 
-## ADR-004: Pemilihan localStorage untuk Penyimpanan Riwayat
+## ADR-004: Pemilihan MySQL (Railway) sebagai Database
+
+| Field | Detail |
+|---|---|
+| **Status** | Accepted |
+| **Tanggal** | 15 Juli 2026 |
+| **Revisi** | Menggantikan rencana awal menggunakan Supabase (PostgreSQL) |
+
+**Konteks:** v2.0 membutuhkan database server-side untuk menyimpan data pengguna, sesi konsultasi, dan pesan. Database harus terintegrasi dengan deployment di Railway.
+
+**Keputusan:** Menggunakan **MySQL 8** yang di-manage oleh **Railway** sebagai database server-side.
+
+**Alasan Berbasis Sistem:** (1) Railway menyediakan MySQL managed — zero-ops, auto-backup, terintegrasi dengan backend. (2) mysql2/promise mendukung prepared statements dan connection pooling. (3) Schema relasional sesuai untuk data users, sessions, messages dengan foreign keys dan cascade delete. (4) Indeks pada kolom yang sering di-query (user_id, session_id) memastikan performa. (5) Env vars Railway (MYSQLHOST, MYSQLUSER, dll.) memudahkan konfigurasi.
+
+**Opsi yang Dipertimbangkan:** Supabase/PostgreSQL (rencana awal, namun Railway MySQL lebih terintegrasi), SQLite (tidak cocok untuk cloud deployment), MongoDB (overkill untuk data relasional).
+
+**Konsekuensi (+):** Zero-ops database. Auto-backup. Terintegrasi dengan Railway. Schema relasional yang robust.
+
+**Konsekuensi (-):** Bergantung pada infrastruktur Railway. MySQL prepared statements memiliki batasan tertentu (LIMIT/OFFSET tidak dapat diparameterisasi — menggunakan `pool.query` sebagai workaround).
+
+---
+
+## ADR-005: Pemilihan JWT untuk Autentikasi
+
+| Field | Detail |
+|---|---|
+| **Status** | Accepted |
+| **Tanggal** | 15 Juli 2026 |
+
+**Konteks:** v2.0 membutuhkan autentikasi pengguna untuk membedakan guest dan user terdaftar, serta otorisasi admin.
+
+**Keputusan:** Menggunakan **JWT (JSON Web Token)** dengan `jsonwebtoken` + `bcryptjs` untuk autentikasi.
+
+**Alasan Berbasis Sistem:** (1) Stateless — tidak memerlukan session store di database. (2) JWT berisi payload (id, email, role) yang dapat diverifikasi tanpa query database. (3) bcryptjs untuk hashing password dengan salt rounds yang aman. (4) Token expiry 7 hari via env var. (5) Three middleware: `authenticateToken` (wajib login), `requireAdmin` (wajib admin), `optionalAuth` (login opsional — untuk chat endpoint).
+
+**Implementasi:**
+- Register: hash password → insert user → return JWT + user data
+- Login: verify password → return JWT + user data
+- Middleware: verify JWT di Authorization header → attach user ke req.user
+- Role-based: `role` field di JWT payload → `requireAdmin` cek role === 'admin'
+
+**Konsekuensi (+):** Stateless, scalable. Simple implementasi. Cookie-free (localStorage-based).
+
+**Konsekuensi (-):** Token tidak dapat di-revoke selain expiry. Risiko jika JWT secret bocor. Tidak ada refresh token mechanism.
+
+---
+
+## ADR-006: Pemilihan Tailwind CSS sebagai Styling Framework
 
 | Field | Detail |
 |---|---|
 | **Status** | Accepted |
 | **Tanggal** | 1 Juni 2026 |
 
-**Konteks:** Aplikasi perlu menyimpan riwayat percakapan agar dapat diakses kembali tanpa login, sesuai dengan batasan v1.0 yang tidak memiliki database server-side.
+**Konteks:** Diperlukan styling yang konsisten, responsif, dengan bundle CSS minimal.
 
-**Keputusan:** Menggunakan **localStorage** browser dengan Pinia plugin `pinia-plugin-persistedstate` untuk sinkronisasi otomatis.
+**Keputusan:** Menggunakan **Tailwind CSS v3** dengan konfigurasi tema kustom.
 
-**Alasan Berbasis Sistem:** (1) Tidak memerlukan database eksternal atau autentikasi — konsisten dengan scope v1.0. (2) Data tersimpan lokal di device pengguna — secara inheren privat tanpa konfigurasi tambahan. (3) Kapasitas localStorage (5-10MB per origin) cukup untuk menyimpan ratusan sesi percakapan teks. (4) Pinia `persistedstate` plugin menyinkronisasi store secara otomatis tanpa boilerplate kode.
+**Alasan Berbasis Sistem:** (1) Utility-first untuk UI yang konsisten. (2) PurgeCSS menghasilkan bundle < 20KB. (3) Breakpoint system untuk responsif. (4) Tema kustom: warna navy, royal blue, gold; font Poppins/Inter; custom shadows dan animations.
 
-**Konsekuensi (+):** Privasi pengguna terjaga. Zero infrastruktur database. Implementasi cepat.
+**Konsekuensi (+):** Developer experience baik. Bundle kecil. Responsif mudah.
 
-**Konsekuensi (-):** Riwayat hilang jika pengguna membersihkan cache/storage browser. Tidak dapat diakses dari device lain. Tidak ada backup.
+**Konsekuensi (-):** Template verbose. Memerlukan konsistensi naming.
 
 ---
 
-## ADR-005: Pemilihan Tailwind CSS sebagai Styling Framework
+## ADR-007: Arsitektur Monorepo Backend + Frontend
 
 | Field | Detail |
 |---|---|
 | **Status** | Accepted |
-| **Tanggal** | 1 Juni 2026 |
+| **Tanggal** | 15 Juli 2026 |
 
-**Konteks:** Diperlukan pendekatan styling yang konsisten, dapat menghasilkan desain responsif dengan cepat, dan menghasilkan bundle CSS yang minimal setelah production build.
+**Konteks:** Frontend Vue.js perlu di-build dan di-deploy bersama backend Express sebagai satu unit deployment.
 
-**Keputusan:** Menggunakan **Tailwind CSS v3** dengan konfigurasi tema kustom (warna brand, tipografi).
+**Keputusan:** Monorepo dengan struktur:
+```
+/
+├── backend/          ← Express server + MySQL routes
+│   ├── src/
+│   └── public/dist/  ← Frontend build output (dari GitHub Actions)
+├── legalaid-frontend/ ← Vue.js source code
+└── docs/
+```
 
-**Alasan Berbasis Sistem:** (1) Utility-first memungkinkan pembuatan komponen UI chat yang konsisten tanpa menulis CSS kustom yang berlebihan. (2) PurgeCSS bawaan Tailwind menghapus class yang tidak digunakan — menghasilkan bundle CSS < 20KB dalam production. (3) Breakpoint system (`sm:`, `md:`, `lg:`) mempermudah implementasi desain responsif untuk F-006. (4) Integrasi native dengan Vite menghasilkan build yang optimal.
+**Alasan Berbasis Sistem:** (1) Frontend di-build ke `legalaid-frontend/dist/`, lalu GitHub Actions workflow menyalin ke `backend/public/dist/`. (2) Express melayani static files dari `backend/public/dist/` — satu URL untuk semua. (3) Deploy Railway hanya perlu satu service (backend) yang sudah include frontend. (4) Mengurangi complexity deployment (tidak perlu CDN terpisah atau reverse proxy).
 
-**Konsekuensi (+):** Developer experience sangat baik. Bundle CSS production sangat kecil. Desain responsif mudah diimplementasikan.
+**Konsekuensi (+):** Deployment simpel — satu Railway service. Satu URL. Tidak perlu CORS antara frontend-backend di production.
 
-**Konsekuensi (-):** Template Vue/HTML menjadi verbose karena banyak class utility. Memerlukan konvensi penamaan komponen yang konsisten.
+**Konsekuensi (-):** Frontend build artifacts ada di repo git. GitHub Actions workflow auto-commit menambah commit noise.
 
 ---
 
-## ADR-006: Arsitektur Proxy Backend untuk Keamanan API
+## ADR-008: Hybrid Storage — localStorage + MySQL
 
 | Field | Detail |
 |---|---|
 | **Status** | Accepted |
-| **Tanggal** | 1 Juni 2026 |
+| **Tanggal** | 15 Juli 2026 |
 
-**Konteks:** API key Google Gemini tidak boleh terekspos ke kode frontend karena dapat dengan mudah diekstrak dari browser DevTools dan disalahgunakan.
+**Konteks:** Pengguna guest (tanpa login) tetap bisa menggunakan aplikasi tanpa registrasi, namun user terdaftar membutuhkan penyimpanan cloud.
 
-**Keputusan:** Semua permintaan ke Gemini API dilakukan melalui backend Express sebagai proxy — tidak ada pemanggilan Gemini langsung dari browser.
+**Keputusan:** Hybrid storage model:
+- **Guest:** Riwayat tersimpan di localStorage via Pinia `persistedstate`
+- **User terdaftar:** Chat otomatis tersimpan ke MySQL via backend API
+- **Chat endpoint** menggunakan `optionalAuth` — jika ada token, simpan ke MySQL; jika tidak, return saja tanpa persist
 
-**Implementasi Keamanan:** (1) API key disimpan di file `.env` di server, tidak pernah dikirim ke client. (2) Backend memvalidasi format dan panjang input sebelum diteruskan ke Gemini. (3) Rate limiting: maksimal 20 request per IP per menit untuk mencegah abuse. (4) Input sanitasi: strip karakter kontrol, batasi panjang input (maksimal 2000 karakter) untuk mencegah prompt injection yang panjang. (5) CORS dikonfigurasi hanya mengizinkan origin frontend yang sah.
+**Alasan Berbasis Sistem:** (1) Guest tetap bisa menggunakan aplikasi tanpa friction registrasi. (2) User terdaftar mendapat benefit backup cloud dan akses multi-device. (3) `optionalAuth` middleware memungkinkan satu endpoint melayani kedua mode. (4) Frontend `chatStore` (sessionStorage) dan `historyStore` (localStorage) tetap berfungsi untuk guest.
 
-**Konsekuensi (+):** API key aman dari eksposur publik. Rate limiting melindungi kuota Gemini. Input validation mengurangi risiko prompt injection.
+**Konsekuensi (+):** Zero-friction untuk guest. Cloud backup untuk user. Satu endpoint melayani kedua mode.
 
-**Konsekuensi (-):** Satu hop jaringan tambahan (latensi < 50ms). Membutuhkan deployment backend terpisah dari frontend.
+**Konsekuensi (-):** Dual storage path menambah kompleksitas. Guest kehilangan data jika cache dibersihkan.
 
 ---
 
-*LegalAid AI — SDD v1.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*
+*LegalAid AI — SDD v2.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*

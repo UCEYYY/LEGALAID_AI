@@ -10,8 +10,8 @@
 |---|---|
 | Nama Aplikasi | LegalAid AI |
 | Tagline | Konsultasi Hukum Gratis untuk Semua Orang |
-| Versi | 1.0.0 |
-| Platform | Web Application (Responsive, PWA) |
+| Versi | 2.0.0 |
+| Platform | Web Application (Responsive) |
 | Bahasa | Bahasa Indonesia |
 | SDG Target | SDG 16 — Perdamaian, Keadilan, dan Kelembagaan yang Tangguh |
 
@@ -65,50 +65,56 @@ Sistem **tidak bertujuan menggantikan pengacara**, melainkan meningkatkan litera
 
 ## 1.4 Fitur & Scope
 
-### 1.4.1 Fitur Utama (Must Have — Versi 1.0)
+### 1.4.1 Fitur Utama (Must Have — Versi 2.0)
 
-| No | Kode | Fitur | Deskripsi | Prioritas |
+| No | Kode | Fitur | Deskripsi | Status |
 |---|---|---|---|---|
-| 1 | F-001 | Pemilihan Kategori Hukum | 6 kategori: Ketenagakerjaan, Konsumen, Keluarga, Pertanahan, Pidana, Utang & Kredit | Must Have |
-| 2 | F-002 | Chat Konsultasi AI | Dialog interaktif menggunakan Google Gemini API dengan system prompt berbasis kategori | Must Have |
-| 3 | F-003 | Konteks Kategori Otomatis | System prompt disesuaikan secara dinamis berdasarkan kategori yang dipilih pengguna | Must Have |
-| 4 | F-004 | Riwayat Percakapan | Penyimpanan otomatis riwayat chat di localStorage browser | Must Have |
-| 5 | F-005 | Disclaimer Hukum Otomatis | Pemberitahuan bahwa aplikasi bukan pengganti pengacara — tampil di awal sesi dan pada jawaban yang mengandung saran spesifik | Must Have |
-| 6 | F-006 | Responsif Mobile | Tampilan optimal di semua ukuran layar dengan breakpoint Tailwind CSS | Must Have |
+| 1 | F-001 | Pemilihan Kategori Hukum | 6 kategori: Ketenagakerjaan, Konsumen, Keluarga, Pertanahan, Pidana, Utang & Kredit | ✅ Implemented |
+| 2 | F-002 | Chat Konsultasi AI | Dialog interaktif menggunakan Groq API (Llama 3.3 70B) dengan system prompt berbasis kategori | ✅ Implemented |
+| 3 | F-003 | Konteks Kategori Otomatis | System prompt disesuaikan secara dinamis berdasarkan kategori yang dipilih pengguna | ✅ Implemented |
+| 4 | F-004 | Riwayat Percakapan | Penyimpanan riwayat chat di localStorage (guest) dan MySQL (user terdaftar) | ✅ Implemented |
+| 5 | F-005 | Disclaimer Hukum Otomatis | Pemberitahuan bahwa aplikasi bukan pengganti pengacara — tampil di awal sesi | ✅ Implemented |
+| 6 | F-006 | Responsif Mobile | Tampilan optimal di semua ukuran layar dengan breakpoint Tailwind CSS | ✅ Implemented |
+| 7 | F-011 | Autentikasi Pengguna | Registrasi dan login dengan JWT, password hashing bcryptjs | ✅ Implemented |
+| 8 | F-012 | Simpan Sesi ke Server | Chat otomatis tersimpan ke MySQL saat user login | ✅ Implemented |
+| 9 | F-013 | Riwayat Berbasis Server | Melihat semua riwayat konsultasi dari database | ✅ Implemented |
+| 10 | F-014 | Dashboard Admin | Statistik pengguna, sesi, pesan, distribusi kategori | ✅ Implemented |
+| 11 | F-015 | Manajemen Pengguna (Admin) | Melihat daftar, detail, dan menghapus pengguna | ✅ Implemented |
+| 12 | F-016 | Manajemen Sesi (Admin) | Melihat semua sesi konsultasi dan pesan di dalamnya | ✅ Implemented |
+| 13 | F-017 | Manajemen Kategori (Admin) | CRUD kategori hukum dengan toggle aktif/nonaktif | ✅ Implemented |
+| 14 | F-018 | Manajemen FAQ (Admin) | CRUD FAQ untuk pertanyaan umum | ✅ Implemented |
 
 ### 1.4.2 Fitur Tambahan (Should Have)
 
-| No | Kode | Fitur | Deskripsi | Prioritas |
+| No | Kode | Fitur | Deskripsi | Status |
 |---|---|---|---|---|
-| 1 | F-007 | Salin Teks Jawaban | Tombol copy pada setiap bubble jawaban AI | Should Have |
-| 2 | F-008 | Reset Percakapan | Tombol mulai percakapan baru tanpa reload halaman | Should Have |
-| 3 | F-009 | Hapus Riwayat | Pengguna dapat menghapus semua riwayat chat tersimpan di browser | Should Have |
-| 4 | F-010 | Contoh Pertanyaan | Chips pertanyaan contoh untuk memandu pengguna pertama kali (onboarding) | Nice to Have |
+| 1 | F-007 | Salin Teks Jawaban | Tombol copy pada setiap bubble jawaban AI | ✅ Implemented |
+| 2 | F-008 | Reset Percakapan | Tombol mulai percakapan baru tanpa reload halaman | ✅ Implemented |
+| 3 | F-009 | Hapus Riwayat | Pengguna dapat menghapus riwayat chat | ✅ Implemented |
+| 4 | F-010 | Contoh Pertanyaan | Chips pertanyaan contoh untuk onboarding pengguna baru | ✅ Implemented |
 
-### 1.4.3 Out of Scope (Tidak Dikembangkan di Versi 1.0)
+### 1.4.3 Out of Scope (Tidak Dikembangkan)
 
-Fitur berikut secara eksplisit tidak termasuk dalam scope versi 1.0 dan akan dipertimbangkan untuk versi selanjutnya:
-
-| Fitur | Alasan Tidak Dimasukkan | Target Versi |
+| Fitur | Alasan | Target Versi |
 |---|---|---|
-| Autentikasi / login pengguna | Menambah kompleksitas di luar scope mata kuliah Front-End; privasi terjaga dengan localStorage | v2.0 |
-| Integrasi pembayaran atau berlangganan | Aplikasi dirancang sebagai layanan gratis; monetisasi bukan tujuan proyek ini | v3.0 |
-| Layanan video call dengan pengacara | Membutuhkan infrastruktur WebRTC dan matching system yang kompleks | v3.0+ |
-| Pembuatan dokumen hukum otomatis | Membutuhkan validasi hukum dari ahli; risiko tinggi jika salah | v3.0+ |
-| Dashboard Admin & statistik server | Tidak ada server-side storage di v1.0; admin hanya relevan setelah database diterapkan | v2.0 |
-| Integrasi real-time database hukum resmi | API hukum Indonesia (JDIH) belum tersedia dalam format yang dapat diintegrasikan secara mudah | v2.0+ |
+| Integrasi pembayaran atau berlangganan | Aplikasi dirancang sebagai layanan gratis | v3.0 |
+| Layanan video call dengan pengacara | Membutuhkan infrastruktur WebRTC yang kompleks | v3.0+ |
+| Pembuatan dokumen hukum otomatis | Membutuhkan validasi hukum dari ahli | v3.0+ |
+| Integrasi real-time database hukum resmi (JDIH) | API JDIH belum tersedia dalam format yang mudah diintegrasikan | v3.0+ |
 
 ---
 
 ## 1.5 User Stories
 
-| ID | Sebagai... | Saya ingin... | Agar... |
-|---|---|---|---|
-| US-001 | Pengguna awam | Memilih kategori hukum yang relevan sebelum mulai bertanya | AI memahami konteks masalah saya dan memberikan jawaban yang tepat sasaran |
-| US-002 | Pekerja yang di-PHK | Bertanya tentang hak pesangon dan prosedur klaim | Saya tahu berapa yang seharusnya saya terima dan langkah apa yang harus dilakukan |
-| US-003 | Korban penipuan online | Mengetahui dasar hukum dan langkah pelaporan ke Bareskrim atau BPSK | Saya dapat melaporkan kasus dengan prosedur yang benar |
-| US-004 | Pengguna yang pernah berkonsultasi | Melihat riwayat percakapan lama di browser saya | Saya tidak perlu mengulangi pertanyaan yang sama |
-| US-005 | Pengguna dengan masalah kompleks | Mendapat rekomendasi LBH atau pengacara pro-bono terdekat | Saya dapat melanjutkan ke bantuan hukum profesional |
+| ID | Sebagai... | Saya ingin... | Agar... | Status |
+|---|---|---|---|---|
+| US-001 | Pengguna awam | Memilih kategori hukum yang relevan sebelum mulai bertanya | AI memahami konteks masalah saya | ✅ |
+| US-002 | Pekerja yang di-PHK | Bertanya tentang hak pesangon dan prosedur klaim | Saya tahu langkah apa yang harus dilakukan | ✅ |
+| US-003 | Korban penipuan online | Mengetahui dasar hukum dan langkah pelaporan | Saya dapat melaporkan kasus dengan prosedur yang benar | ✅ |
+| US-004 | Pengguna terdaftar | Melihat riwayat percakapan lama dari mana saja | Saya tidak perlu mengulangi pertanyaan yang sama | ✅ |
+| US-005 | Pengguna dengan masalah kompleks | Mendapat rekomendasi LBH atau pengacara pro-bono | Saya dapat melanjutkan ke bantuan hukum profesional | ✅ |
+| US-006 | Admin | Memantau statistik penggunaan sistem | Saya dapat mengambil keputusan berbasis data | ✅ |
+| US-007 | Admin | Mengelola pengguna dan sesi konsultasi | Saya dapat menjaga kualitas layanan | ✅ |
 
 ---
 
@@ -116,14 +122,24 @@ Fitur berikut secara eksplisit tidak termasuk dalam scope versi 1.0 dan akan dip
 
 | Metrik | Target | Definisi Operasional | Cara Pengukuran |
 |---|---|---|---|
-| Response Time AI | < 5 detik | Waktu antara pengguna menekan tombol kirim hingga karakter pertama jawaban AI muncul di layar (Time-to-First-Token) | `performance.now()` di frontend, log timestamp di backend |
-| Akurasi Konteks Hukum | > 80% | Jawaban AI dianggap 'akurat konteks' jika: (a) relevan dengan kategori hukum yang dipilih, (b) menyertakan setidaknya satu referensi regulasi, dan (c) tidak bertentangan secara nyata dengan regulasi yang berlaku. Dinilai oleh 2 reviewer | Evaluasi manual 30 pertanyaan per kategori (total 180 sampel) |
-| Mobile Usability Score | > 85/100 | Skor Lighthouse kategori Performance + Accessibility + Best Practices di perangkat mobile simulasi | Google Lighthouse Audit (Chrome DevTools) |
-| Error Rate API | < 5% | Persentase request ke `/api/chat` yang mengembalikan HTTP status >= 400 atau timeout | Log error Express.js, dihitung dari total request dalam sesi pengujian |
-| Kelengkapan Fitur | 100% Must Have | Semua 6 fitur F-001 hingga F-006 berfungsi sesuai definisi dalam User Stories | Checklist pengujian manual terhadap setiap acceptance criteria |
-
-> **Catatan revisi:** Target akurasi diturunkan dari >85% menjadi >80% karena ukuran sampel evaluasi yang lebih besar (180 vs 50 pertanyaan sebelumnya) memberikan estimasi yang lebih konservatif namun valid secara metodologis. Definisi 'akurasi' kini dijelaskan secara operasional.
+| Response Time AI | < 5 detik | Waktu antara pengguna menekan tombol kirim hingga karakter pertama jawaban AI muncul | Log timestamp di backend |
+| Akurasi Konteks Hukum | > 80% | Jawaban relevan dengan kategori, menyertakan referensi regulasi, tidak bertentangan dengan regulasi | Evaluasi manual 30 pertanyaan per kategori |
+| Mobile Usability Score | > 85/100 | Skor Lighthouse Performance + Accessibility + Best Practices | Google Lighthouse Audit |
+| Error Rate API | < 5% | Persentase request ke `/api/chat` yang mengembalikan HTTP >= 400 atau timeout | Log error Express.js |
+| Kelengkapan Fitur | 100% Must Have | Semua fitur F-001 hingga F-018 berfungsi sesuai definisi | Checklist pengujian manual |
 
 ---
 
-*LegalAid AI — SDD v1.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*
+## 1.7 Deployment & Infrastructure
+
+| Komponen | Teknologi | URL |
+|---|---|---|
+| Backend + MySQL | Railway | `https://legalaid-api.railway.app` |
+| Frontend | Static files served by Express (dist dari GitHub Actions) | `https://legalaid-api.railway.app` |
+| Database | MySQL (Railway managed) | Internal Railway network |
+| AI Engine | Groq API (Llama 3.3 70B Versatile) | `https://api.groq.com` |
+| CI/CD | GitHub Actions | Build frontend → copy to backend/public/dist/ → auto-commit |
+
+---
+
+*LegalAid AI — SDD v2.0 | STMIK Lombok 2026 | Sucianti — SI20230032 & Wulandari — SI20230035*
