@@ -23,6 +23,7 @@
 | 5 | [05-API-Design.md](./05-API-Design.md) | Desain API — spesifikasi endpoint autentikasi, admin, sesi, chat, dan health check |
 | 6 | [06-Prompt-Engineering.md](./06-Prompt-Engineering.md) | Desain Prompt Engineering — arsitektur prompt, base system prompt, category context injection, dan mitigasi hallucination |
 | 7 | [07-User-Roles-and-Permissions.md](./07-User-Roles-and-Permissions.md) | User Roles & Permissions — permission matrix Guest/User/Admin, alur autentikasi JWT, dan admin panel |
+| 8 | [08-Use-Case-Diagram.md](./08-Use-Case-Diagram.md) | Use Case Diagram — diagram use case seluruh fitur aplikasi (Mermaid), deskripsi 20 use case, dan relasi antar use case |
 
 ---
 

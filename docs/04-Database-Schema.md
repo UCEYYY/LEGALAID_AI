@@ -53,7 +53,79 @@ Database MySQL 8 di-host di Railway. Schema terdiri dari 5 tabel dengan relasi f
 
 ---
 
-### 4.2.1 ERD — Deskripsi Relasi Antar Entitas
+### 4.2.1 Entity Relationship Diagram (Mermaid)
+
+```mermaid
+erDiagram
+    users {
+        INT id PK "AUTO_INCREMENT"
+        VARCHAR name "NOT NULL"
+        VARCHAR email "UNIQUE NOT NULL"
+        VARCHAR password_hash "NOT NULL"
+        ENUM role "'user' | 'admin'"
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    categories {
+        INT id PK "AUTO_INCREMENT"
+        VARCHAR slug "UNIQUE NOT NULL"
+        VARCHAR label "NOT NULL"
+        TEXT description
+        VARCHAR icon
+        BOOLEAN is_active "DEFAULT TRUE"
+        INT sort_order "DEFAULT 0"
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    chat_sessions {
+        INT id PK "AUTO_INCREMENT"
+        INT user_id FK "NOT NULL"
+        VARCHAR category_slug FK "NOT NULL"
+        VARCHAR title
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    chat_messages {
+        INT id PK "AUTO_INCREMENT"
+        INT session_id FK "NOT NULL"
+        ENUM role "'user' | 'assistant'"
+        TEXT content "NOT NULL"
+        TIMESTAMP created_at
+    }
+
+    faq {
+        INT id PK "AUTO_INCREMENT"
+        TEXT question "NOT NULL"
+        TEXT answer "NOT NULL"
+        VARCHAR category_slug FK "NULLABLE"
+        INT sort_order "DEFAULT 0"
+        BOOLEAN is_active "DEFAULT TRUE"
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    users ||--o{ chat_sessions : "membuat"
+    categories ||--o{ chat_sessions : "dikategorikan"
+    categories ||--o{ faq : "memiliki"
+    chat_sessions ||--o{ chat_messages : "memiliki"
+    users ||--o| chat_messages : ""
+```
+
+**Keterangan Relasi:**
+
+| Relasi | Tipe | FK | On Delete |
+|---|---|---|---|
+| `users` → `chat_sessions` | One-to-Many | `chat_sessions.user_id` → `users.id` | CASCADE |
+| `categories` → `chat_sessions` | One-to-Many | `chat_sessions.category_slug` → `categories.slug` | RESTRICT |
+| `chat_sessions` → `chat_messages` | One-to-Many | `chat_messages.session_id` → `chat_sessions.id` | CASCADE |
+| `categories` → `faq` | One-to-Many | `faq.category_slug` → `categories.slug` | SET NULL |
+
+---
+
+### 4.2.2 ERD — Deskripsi Relasi Antar Entitas
 
 | Entitas | Primary Key | Atribut Utama | Relasi |
 |---|---|---|---|
